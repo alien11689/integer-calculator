@@ -2,6 +2,7 @@ package com.github.alien11689.integercalculator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 class IntegerCalculator {
 
@@ -14,7 +15,7 @@ class IntegerCalculator {
         }
 
         List<Integer> numbers = new ArrayList<>();
-        List<Character> operators = new ArrayList<>();
+        List<Operator> operators = new ArrayList<>();
 
         StringBuilder curNumber = new StringBuilder();
         boolean readingNumber = true;
@@ -39,18 +40,18 @@ class IntegerCalculator {
                     numbers.add(Integer.parseInt(curNumber.toString()));
                     curNumber = new StringBuilder();
                 }
-                operators.add(current);
+                operators.add(Operator.fromChar(current));
                 readingNumber = true;
             } else {
-                throw new IllegalArgumentException("Unexpected character: " + current);
+                throw new IllegalArgumentException("Unexpected character: " + current + " at position " + i);
             }
         }
         if (readingNumber) {
             numbers.add(Integer.parseInt(curNumber.toString()));
         }
 
-        reduceMultiplicationAndDivision(operators, numbers);
-        reduceAdditionAndSubstraction(operators, numbers);
+        reduce(Set.of(Operator.MULTIPLY, Operator.DIVISION), operators, numbers);
+        reduce(Set.of(Operator.ADD, Operator.SUBTRACT), operators, numbers);
 
         if (numbers.size() == 1 && operators.isEmpty()) {
             return numbers.getFirst();
@@ -59,12 +60,12 @@ class IntegerCalculator {
         }
     }
 
-    private static void reduceMultiplicationAndDivision(List<Character> operators, List<Integer> numbers) {
+    private static void reduce(Set<Operator> onlyUseOperators, List<Operator> operators, List<Integer> numbers) {
         int i = 0;
         while (i < operators.size()) {
-            Character operator = operators.get(i);
-            if (operator == '*' || operator == '/') {
-                int result = operator == '*' ? Math.multiplyExact(numbers.get(i), numbers.get(i + 1)) : (numbers.get(i) / numbers.get(i + 1));
+            Operator operator = operators.get(i);
+            if (onlyUseOperators.contains(operator)) {
+                int result = operator.calculate(numbers.get(i), numbers.get(i + 1));
                 numbers.set(i, result);
                 numbers.remove(i + 1);
                 operators.remove(i);
@@ -74,18 +75,43 @@ class IntegerCalculator {
         }
     }
 
-    private static void reduceAdditionAndSubstraction(List<Character> operators, List<Integer> numbers) {
-        int i = 0;
-        while (i < operators.size()) {
-            Character operator = operators.get(i);
-            if (operator == '+' || operator == '-') {
-                int result = operator == '+' ? Math.addExact(numbers.get(i), numbers.get(i + 1)) : Math.subtractExact(numbers.get(i), numbers.get(i + 1));
-                numbers.set(i, result);
-                numbers.remove(i + 1);
-                operators.remove(i);
-            } else {
-                ++i;
+    private enum Operator {
+        ADD {
+            @Override
+            int calculate(int left, int right) {
+                return Math.addExact(left, right);
             }
+        },
+        SUBTRACT {
+            @Override
+            int calculate(int left, int right) {
+                return Math.subtractExact(left, right);
+            }
+        },
+        MULTIPLY {
+            @Override
+            int calculate(int left, int right) {
+                return Math.multiplyExact(left, right);
+            }
+        },
+        DIVISION {
+            @Override
+            int calculate(int left, int right) {
+                return left / right;
+            }
+        };
+
+        public static Operator fromChar(char c) {
+            return switch (c) {
+                case '+' -> ADD;
+                case '-' -> SUBTRACT;
+                case '*' -> MULTIPLY;
+                case '/' -> DIVISION;
+                default -> throw new IllegalArgumentException("Unknown operator: " + c);
+            };
         }
+
+        abstract int calculate(int left, int right);
     }
 }
+
