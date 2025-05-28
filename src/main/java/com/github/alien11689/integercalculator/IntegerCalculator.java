@@ -49,45 +49,43 @@ class IntegerCalculator {
             numbers.add(Integer.parseInt(curNumber.toString()));
         }
 
-        int i = 0;
-        while (i < operators.size()) {
-            if (operators.get(i) == '*') {
-                int result = Math.multiplyExact(numbers.get(i), numbers.get(i + 1));
-                numbers.set(i, result);
-                numbers.remove(i + 1);
-                operators.remove(i);
-            } else if (operators.get(i) == '/') {
-                int result = numbers.get(i) / numbers.get(i + 1);
-                numbers.set(i, result);
-                numbers.remove(i + 1);
-                operators.remove(i);
-            } else {
-                ++i;
-            }
-        }
-
-
-        i = 0;
-        while (i < operators.size()) {
-            if (operators.get(i) == '+') {
-                int result = Math.addExact(numbers.get(i), numbers.get(i + 1));
-                numbers.set(i, result);
-                numbers.remove(i + 1);
-                operators.remove(i);
-            } else if (operators.get(i) == '-') {
-                int result = Math.subtractExact(numbers.get(i), numbers.get(i + 1));
-                numbers.set(i, result);
-                numbers.remove(i + 1);
-                operators.remove(i);
-            } else {
-                ++i;
-            }
-        }
+        reduceMultiplicationAndDivision(operators, numbers);
+        reduceAdditionAndSubstraction(operators, numbers);
 
         if (numbers.size() == 1 && operators.isEmpty()) {
-            return numbers.get(0);
+            return numbers.getFirst();
         } else {
             throw new IllegalArgumentException("Invalid expression");
+        }
+    }
+
+    private static void reduceMultiplicationAndDivision(List<Character> operators, List<Integer> numbers) {
+        int i = 0;
+        while (i < operators.size()) {
+            Character operator = operators.get(i);
+            if (operator == '*' || operator == '/') {
+                int result = operator == '*' ? Math.multiplyExact(numbers.get(i), numbers.get(i + 1)) : (numbers.get(i) / numbers.get(i + 1));
+                numbers.set(i, result);
+                numbers.remove(i + 1);
+                operators.remove(i);
+            } else {
+                ++i;
+            }
+        }
+    }
+
+    private static void reduceAdditionAndSubstraction(List<Character> operators, List<Integer> numbers) {
+        int i = 0;
+        while (i < operators.size()) {
+            Character operator = operators.get(i);
+            if (operator == '+' || operator == '-') {
+                int result = operator == '+' ? Math.addExact(numbers.get(i), numbers.get(i + 1)) : Math.subtractExact(numbers.get(i), numbers.get(i + 1));
+                numbers.set(i, result);
+                numbers.remove(i + 1);
+                operators.remove(i);
+            } else {
+                ++i;
+            }
         }
     }
 }
