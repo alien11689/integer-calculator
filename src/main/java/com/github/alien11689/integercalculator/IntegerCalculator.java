@@ -1,11 +1,93 @@
 package com.github.alien11689.integercalculator;
 
+import java.util.ArrayList;
+import java.util.List;
+
 class IntegerCalculator {
 
     private IntegerCalculator() {
     }
 
     static int calculate(String expression) {
-        throw new RuntimeException("Not implemented yet");
+        if (expression == null) {
+            throw new IllegalArgumentException("Expression cannot be null");
+        }
+
+        List<Integer> numbers = new ArrayList<>();
+        List<Character> operators = new ArrayList<>();
+
+        StringBuilder curNumber = new StringBuilder();
+        boolean readingNumber = true;
+
+        for (int i = 0; i < expression.length(); ++i) {
+            char current = expression.charAt(i);
+            if (Character.isWhitespace(current)) {
+                if (readingNumber && !curNumber.isEmpty()) {
+                    numbers.add(Integer.parseInt(curNumber.toString()));
+                    curNumber = new StringBuilder();
+                    readingNumber = false;
+                }
+            } else if (Character.isDigit(current)) {
+                readingNumber = true;
+                curNumber.append(current);
+            } else if (current == '+' || current == '-' || current == '*' || current == '/') {
+                if (readingNumber && curNumber.isEmpty() && current == '-') {
+                    curNumber.append(current);
+                    continue;
+                }
+                if (readingNumber) {
+                    numbers.add(Integer.parseInt(curNumber.toString()));
+                    curNumber = new StringBuilder();
+                }
+                operators.add(current);
+                readingNumber = true;
+            } else {
+                throw new IllegalArgumentException("Unexpected character: " + current);
+            }
+        }
+        if (readingNumber) {
+            numbers.add(Integer.parseInt(curNumber.toString()));
+        }
+
+        int i = 0;
+        while (i < operators.size()) {
+            if (operators.get(i) == '*') {
+                int result = Math.multiplyExact(numbers.get(i), numbers.get(i + 1));
+                numbers.set(i, result);
+                numbers.remove(i + 1);
+                operators.remove(i);
+            } else if (operators.get(i) == '/') {
+                int result = numbers.get(i) / numbers.get(i + 1);
+                numbers.set(i, result);
+                numbers.remove(i + 1);
+                operators.remove(i);
+            } else {
+                ++i;
+            }
+        }
+
+
+        i = 0;
+        while (i < operators.size()) {
+            if (operators.get(i) == '+') {
+                int result = Math.addExact(numbers.get(i), numbers.get(i + 1));
+                numbers.set(i, result);
+                numbers.remove(i + 1);
+                operators.remove(i);
+            } else if (operators.get(i) == '-') {
+                int result = Math.subtractExact(numbers.get(i), numbers.get(i + 1));
+                numbers.set(i, result);
+                numbers.remove(i + 1);
+                operators.remove(i);
+            } else {
+                ++i;
+            }
+        }
+
+        if (numbers.size() == 1 && operators.isEmpty()) {
+            return numbers.get(0);
+        } else {
+            throw new IllegalArgumentException("Invalid expression");
+        }
     }
 }
