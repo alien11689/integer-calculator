@@ -31,11 +31,9 @@ class IntegerCalculator {
             } else if (Character.isDigit(current)) {
                 readingNumber = true;
                 curNumber.append(current);
+            } else if (readingNumber && curNumber.isEmpty() && current == '-') {
+                curNumber.append(current);
             } else if (current == '+' || current == '-' || current == '*' || current == '/') {
-                if (readingNumber && curNumber.isEmpty() && current == '-') {
-                    curNumber.append(current);
-                    continue;
-                }
                 if (readingNumber) {
                     numbers.add(Integer.parseInt(curNumber.toString()));
                     curNumber = new StringBuilder();
@@ -101,7 +99,7 @@ class IntegerCalculator {
             }
         };
 
-        public static Operator fromChar(char c) {
+        static Operator fromChar(char c) {
             return switch (c) {
                 case '+' -> ADD;
                 case '-' -> SUBTRACT;
