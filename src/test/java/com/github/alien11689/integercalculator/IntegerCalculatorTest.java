@@ -34,7 +34,8 @@ public class IntegerCalculatorTest {
                 Arguments.of("-2 + 3 * 4 - 10 / 2", 5),
                 Arguments.of("1000000 * 0 + 5", 5),
                 Arguments.of("2 + 3 * 4 - 6 / 2", 11),
-                Arguments.of("2+3*4-6/2", 11)
+                Arguments.of("+1 + 2", 3),
+                Arguments.of("1 + +2", 3)
         );
     }
 
@@ -60,7 +61,7 @@ public class IntegerCalculatorTest {
 
     static Stream<String> divisionsByZeroProvider() {
         return Stream.of(
-                "0/0",
+                "0 / 0",
                 "-2 / 0",
                 "7 / 0"
         );
@@ -78,11 +79,10 @@ public class IntegerCalculatorTest {
                 "",
                 "   ",
                 "1 5",
-                "+1 + 2",
-                "1 + +2",
                 "3 * / 2",
                 "4 + 5 -",
-                "abc + 5"
+                "abc + 5",
+                "2+3*4-6/2"
         );
     }
 }

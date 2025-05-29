@@ -1,11 +1,15 @@
 package com.github.alien11689.integercalculator;
 
 import java.util.ArrayList;
+import java.util.EmptyStackException;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import java.util.function.BiFunction;
 
 class IntegerCalculator {
+
+    private static final Set<String> operators = Set.of("+", "-", "*", "/");
 
     private IntegerCalculator() {
     }
@@ -21,43 +25,23 @@ class IntegerCalculator {
     }
 
     private static List<ExpressionElement> convertExpressionToReversePolishNotation(String expression) {
+        String[] tokens = expression.split("\\s+");
+
         List<ExpressionElement> expressionInReversePolishNotation = new ArrayList<>();
         Stack<Operator> stack = new Stack<>();
 
-        StringBuilder curNumber = new StringBuilder();
-        boolean readingNumber = true;
-
-        for (int i = 0; i < expression.length(); ++i) {
-            char current = expression.charAt(i);
-            if (Character.isWhitespace(current)) {
-                if (readingNumber && !curNumber.isEmpty()) {
-                    expressionInReversePolishNotation.add(new Num(Integer.parseInt(curNumber.toString())));
-                    curNumber = new StringBuilder();
-                    readingNumber = false;
-                }
-            } else if (Character.isDigit(current)) {
-                readingNumber = true;
-                curNumber.append(current);
-            } else if (readingNumber && curNumber.isEmpty() && current == '-') {
-                curNumber.append(current);
-            } else if (current == '+' || current == '-' || current == '*' || current == '/') {
-                if (readingNumber) {
-                    expressionInReversePolishNotation.add(new Num(Integer.parseInt(curNumber.toString())));
-                    curNumber = new StringBuilder();
-                }
-                Operator operator = Operator.fromChar(current);
+        for (String token : tokens) {
+            if (operators.contains(token)) {
+                Operator operator = Operator.parse(token);
                 while (!stack.isEmpty() && stack.peek().getPriority() >= operator.getPriority()) {
                     expressionInReversePolishNotation.add(stack.pop());
                 }
                 stack.push(operator);
-                readingNumber = true;
             } else {
-                throw new IllegalArgumentException("Unexpected character: " + current + " at position " + i);
+                expressionInReversePolishNotation.add(new Num(Integer.parseInt(token)));
             }
         }
-        if (readingNumber) {
-            expressionInReversePolishNotation.add(new Num(Integer.parseInt(curNumber.toString())));
-        }
+
         while (!stack.isEmpty()) {
             expressionInReversePolishNotation.add(stack.pop());
         }
@@ -70,9 +54,13 @@ class IntegerCalculator {
             switch (expressionElement) {
                 case Num(int value) -> stack.push(value);
                 case Operator o -> {
-                    int right = stack.pop();
-                    int left = stack.pop();
-                    stack.push(o.calculate(left, right));
+                    try {
+                        int right = stack.pop();
+                        int left = stack.pop();
+                        stack.push(o.calculate(left, right));
+                    } catch (EmptyStackException __) {
+                        throw new IllegalArgumentException("Invalid expression");
+                    }
                 }
             }
         }
@@ -104,13 +92,13 @@ class IntegerCalculator {
             this.operation = operation;
         }
 
-        static Operator fromChar(char c) {
-            return switch (c) {
-                case '+' -> ADD;
-                case '-' -> SUBTRACT;
-                case '*' -> MULTIPLY;
-                case '/' -> DIVISION;
-                default -> throw new IllegalArgumentException("Unknown operator: " + c);
+        static Operator parse(String token) {
+            return switch (token) {
+                case "+" -> ADD;
+                case "-" -> SUBTRACT;
+                case "*" -> MULTIPLY;
+                case "/" -> DIVISION;
+                default -> throw new IllegalArgumentException("Unknown operator: " + token);
             };
         }
 
