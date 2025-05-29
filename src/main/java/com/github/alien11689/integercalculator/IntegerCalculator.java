@@ -2,7 +2,7 @@ package com.github.alien11689.integercalculator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Stack;
 
 class IntegerCalculator {
 
@@ -14,8 +14,14 @@ class IntegerCalculator {
             throw new IllegalArgumentException("Expression cannot be null");
         }
 
-        List<Integer> numbers = new ArrayList<>();
-        List<Operator> operators = new ArrayList<>();
+        List<ExpressionElement> expressionInReversePolishNotation = convertExpressionToReversePolishNotation(expression);
+
+        return calculateExpressionInReversePolishNotation(expressionInReversePolishNotation);
+    }
+
+    private static List<ExpressionElement> convertExpressionToReversePolishNotation(String expression) {
+        List<ExpressionElement> expressionInReversePolishNotation = new ArrayList<>();
+        Stack<Operator> stack = new Stack<>();
 
         StringBuilder curNumber = new StringBuilder();
         boolean readingNumber = true;
@@ -24,7 +30,7 @@ class IntegerCalculator {
             char current = expression.charAt(i);
             if (Character.isWhitespace(current)) {
                 if (readingNumber && !curNumber.isEmpty()) {
-                    numbers.add(Integer.parseInt(curNumber.toString()));
+                    expressionInReversePolishNotation.add(new Num(Integer.parseInt(curNumber.toString())));
                     curNumber = new StringBuilder();
                     readingNumber = false;
                 }
@@ -35,69 +41,84 @@ class IntegerCalculator {
                 curNumber.append(current);
             } else if (current == '+' || current == '-' || current == '*' || current == '/') {
                 if (readingNumber) {
-                    numbers.add(Integer.parseInt(curNumber.toString()));
+                    expressionInReversePolishNotation.add(new Num(Integer.parseInt(curNumber.toString())));
                     curNumber = new StringBuilder();
                 }
-                operators.add(Operator.fromChar(current));
+                Operator operator = Operator.fromChar(current);
+                while (!stack.isEmpty() && stack.peek().getPriority() >= operator.getPriority()) {
+                    expressionInReversePolishNotation.add(stack.pop());
+                }
+                stack.push(operator);
                 readingNumber = true;
             } else {
                 throw new IllegalArgumentException("Unexpected character: " + current + " at position " + i);
             }
         }
         if (readingNumber) {
-            numbers.add(Integer.parseInt(curNumber.toString()));
+            expressionInReversePolishNotation.add(new Num(Integer.parseInt(curNumber.toString())));
         }
+        while (!stack.isEmpty()) {
+            expressionInReversePolishNotation.add(stack.pop());
+        }
+        return expressionInReversePolishNotation;
+    }
 
-        reduce(Set.of(Operator.MULTIPLY, Operator.DIVISION), operators, numbers);
-        reduce(Set.of(Operator.ADD, Operator.SUBTRACT), operators, numbers);
-
-        if (numbers.size() == 1 && operators.isEmpty()) {
-            return numbers.getFirst();
+    private static int calculateExpressionInReversePolishNotation(List<ExpressionElement> expression) {
+        Stack<Integer> stack = new Stack<>();
+        for (ExpressionElement expressionElement : expression) {
+            switch (expressionElement) {
+                case Num(int value) -> stack.push(value);
+                case Operator o -> {
+                    int right = stack.pop();
+                    int left = stack.pop();
+                    stack.push(o.calculate(left, right));
+                }
+            }
+        }
+        if (stack.size() == 1) {
+            return stack.pop();
         } else {
             throw new IllegalArgumentException("Invalid expression");
         }
     }
 
-    private static void reduce(Set<Operator> onlyUseOperators, List<Operator> operators, List<Integer> numbers) {
-        int i = 0;
-        while (i < operators.size()) {
-            Operator operator = operators.get(i);
-            if (onlyUseOperators.contains(operator)) {
-                int result = operator.calculate(numbers.get(i), numbers.get(i + 1));
-                numbers.set(i, result);
-                numbers.remove(i + 1);
-                operators.remove(i);
-            } else {
-                ++i;
-            }
-        }
+    private sealed interface ExpressionElement {
     }
 
-    private enum Operator {
-        ADD {
+    private record Num(int value) implements ExpressionElement {
+    }
+
+    private enum Operator implements ExpressionElement {
+        ADD(1) {
             @Override
             int calculate(int left, int right) {
                 return Math.addExact(left, right);
             }
         },
-        SUBTRACT {
+        SUBTRACT(1) {
             @Override
             int calculate(int left, int right) {
                 return Math.subtractExact(left, right);
             }
         },
-        MULTIPLY {
+        MULTIPLY(2) {
             @Override
             int calculate(int left, int right) {
                 return Math.multiplyExact(left, right);
             }
         },
-        DIVISION {
+        DIVISION(2) {
             @Override
             int calculate(int left, int right) {
                 return left / right;
             }
         };
+
+        private final int priority;
+
+        Operator(int priority) {
+            this.priority = priority;
+        }
 
         static Operator fromChar(char c) {
             return switch (c) {
@@ -110,6 +131,11 @@ class IntegerCalculator {
         }
 
         abstract int calculate(int left, int right);
+
+        int getPriority() {
+            return priority;
+        }
     }
+
 }
 
