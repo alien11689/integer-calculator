@@ -3,6 +3,7 @@ package com.github.alien11689.integercalculator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.function.BiFunction;
 
 class IntegerCalculator {
 
@@ -89,35 +90,18 @@ class IntegerCalculator {
     }
 
     private enum Operator implements ExpressionElement {
-        ADD(1) {
-            @Override
-            int calculate(int left, int right) {
-                return Math.addExact(left, right);
-            }
-        },
-        SUBTRACT(1) {
-            @Override
-            int calculate(int left, int right) {
-                return Math.subtractExact(left, right);
-            }
-        },
-        MULTIPLY(2) {
-            @Override
-            int calculate(int left, int right) {
-                return Math.multiplyExact(left, right);
-            }
-        },
-        DIVISION(2) {
-            @Override
-            int calculate(int left, int right) {
-                return left / right;
-            }
-        };
+        ADD(1, Math::addExact),
+        SUBTRACT(1, Math::subtractExact),
+        MULTIPLY(2, Math::multiplyExact),
+        DIVISION(2, (a, b) -> a / b);
 
         private final int priority;
 
-        Operator(int priority) {
+        private final BiFunction<Integer, Integer, Integer> operation;
+
+        Operator(int priority, BiFunction<Integer, Integer, Integer> operation) {
             this.priority = priority;
+            this.operation = operation;
         }
 
         static Operator fromChar(char c) {
@@ -130,7 +114,9 @@ class IntegerCalculator {
             };
         }
 
-        abstract int calculate(int left, int right);
+        int calculate(int left, int right) {
+            return operation.apply(left, right);
+        }
 
         int getPriority() {
             return priority;
